@@ -6,10 +6,31 @@ buildscript {
         targetSdkVersion = 36
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.1.20"
+        
+        // Add these lines
+        androidXAnnotation = "1.7.1"
+        androidXBrowser = "1.7.0"
+        androidXCore = "1.12.0"
+        expoModulesCore = "1.11.7"
     }
     repositories {
         google()
         mavenCentral()
+        maven {
+            url 'https://www.jitpack.io'
+        }
+        // Add this line
+        maven { url 'https://maven.google.com' }
+    }
+    
+    allprojects {
+        repositories {
+            google()
+            mavenCentral()
+            maven {
+                url 'https://www.jitpack.io'
+            }
+        }
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
