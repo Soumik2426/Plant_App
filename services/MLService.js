@@ -1,160 +1,83 @@
-import * as tf from '@tensorflow/tfjs';
-import { bundleResourceIO, decodeJpeg } from '@tensorflow/tfjs-react-native';
-import * as FileSystem from 'react-native-fs';
-import { ImagePreprocessor } from './ImagePreprocessor';
-import { DiseaseClassifier } from './DiseaseClassifier';
+// ==========================================
+// FILE: services/MLService.js
+// ==========================================
+import axios from 'axios';
+import { getDeviceId } from './DeviceIdService';
 
 class MLService {
   constructor() {
-    this.models = {
-      coffee: null,
-      jute: null
-    };
-    this.isInitialized = false;
-    this.preprocessor = new ImagePreprocessor();
-    this.classifier = new DiseaseClassifier();
+    // New prediction endpoint that requires image + device ID
+    this.apiUrl = 'http://13.204.69.157:8000/predict';
   }
 
   /**
-   * Initialize TensorFlow and load models
+   * Send image to remote model API for prediction
+   * @param {string} imageUri - URI of the image picked from gallery or camera
+   * @returns {Promise<{Class: string, Confidence: number}>}
    */
-  async initialize() {
-    if (this.isInitialized) return;
-
+  async predictDiseaseRemote(imageUri) {
     try {
-      // Wait for TensorFlow to be ready
-      await tf.ready();
-      console.log('TensorFlow.js initialized');
+      const deviceId = await getDeviceId();
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'photo.jpg'
+      });
 
-      // Load both models
-      await this.loadModels();
-      
-      this.isInitialized = true;
-      console.log('ML Service initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize ML Service:', error);
-      throw error;
-    }
-  }
+      // API requires a device identifier along with the image
+      formData.append('device_id', deviceId);
 
-  /**
-   * Load trained models for coffee and jute
-   */
-  async loadModels() {
-    try {
-      // Option A: Load from local bundle (recommended)
-      // Place your model.json and weight files in assets/models/
-      
-      // Coffee model
-      const coffeeModelJson = require('../assets/models/coffee/model.json');
-      const coffeeModelWeights = require('../assets/models/coffee/weights.bin');
-      this.models.coffee = await tf.loadLayersModel(
-        bundleResourceIO(coffeeModelJson, coffeeModelWeights)
-      );
-      console.log('Coffee model loaded');
+      console.log('Uploading image to model API with device ID:', deviceId);
+      const response = await axios.post(this.apiUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-      // Jute model
-      const juteModelJson = require('../assets/models/jute/model.json');
-      const juteModelWeights = require('../assets/models/jute/weights.bin');
-      this.models.jute = await tf.loadLayersModel(
-        bundleResourceIO(juteModelJson, juteModelWeights)
-      );
-      console.log('Jute model loaded');
+      console.log('Raw model response:', response.data);
 
-      // Option B: Load from remote URL (for updates without app release)
-      // this.models.coffee = await tf.loadLayersModel(
-      //   'https://your-server.com/models/coffee/model.json'
-      // );
-      // this.models.jute = await tf.loadLayersModel(
-      //   'https://your-server.com/models/jute/model.json'
-      // );
+      // The backend returns shape like:
+      // { prediction: 'Rust Sugarcane Leaf', confidence: '85.28%', image_url: '...' }
+      const data = response.data || {};
 
-    } catch (error) {
-      console.error('Failed to load models:', error);
-      throw error;
-    }
-  }
+      const prediction =
+        data.prediction ||
+        data.Prediction ||
+        data.class ||
+        data.Class ||
+        null;
 
-  /**
-   * Detect plant type from image
-   */
-  async detectPlantType(imageUri) {
-    // Simple heuristic or use a separate classifier
-    // For now, you can ask user to select plant type
-    // Or train a separate model to detect plant type first
-    return 'coffee'; // or 'jute'
-  }
+      let confidenceValue = 0;
+      const rawConfidence = data.confidence ?? data.Confidence;
 
-  /**
-   * Predict disease from image
-   * @param {string} imageUri - URI of the captured image
-   * @param {string} plantType - 'coffee' or 'jute'
-   */
-  async predictDisease(imageUri, plantType = 'coffee') {
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-
-    try {
-      console.log(`Analyzing ${plantType} plant image...`);
-
-      // Step 1: Load and preprocess image
-      const imageTensor = await this.preprocessor.loadAndPreprocessImage(imageUri);
-
-      // Step 2: Select appropriate model
-      const model = this.models[plantType];
-      if (!model) {
-        throw new Error(`Model for ${plantType} not loaded`);
+      if (typeof rawConfidence === 'string') {
+        // Extract numeric part, e.g. "85.28%" -> 85.28
+        const match = rawConfidence.match(/[-+]?[0-9]*\.?[0-9]+/);
+        if (match) {
+          const numeric = parseFloat(match[0]);
+          // Backend appears to return 0-100%; convert to 0-1 range
+          confidenceValue = isNaN(numeric) ? 0 : numeric / 100;
+        }
+      } else if (typeof rawConfidence === 'number') {
+        // If backend ever returns a pure number, handle both 0-1 and 0-100
+        confidenceValue = rawConfidence > 1 ? rawConfidence / 100 : rawConfidence;
       }
 
-      // Step 3: Make prediction
-      const predictions = await model.predict(imageTensor);
-      const predictionData = await predictions.data();
+      const mappedResult = {
+        Class: prediction,
+        Confidence: confidenceValue,
+        raw: data,
+      };
 
-      // Step 4: Clean up tensors to prevent memory leaks
-      imageTensor.dispose();
-      predictions.dispose();
-
-      // Step 5: Process predictions
-      const result = this.classifier.processePredictions(
-        predictionData,
-        plantType
-      );
-
-      console.log('Prediction result:', result);
-      return result;
+      console.log('Mapped model result:', mappedResult);
+      return mappedResult;
 
     } catch (error) {
-      console.error('Prediction error:', error);
-      throw error;
+      console.error('Error predicting disease:', error.response?.data || error.message);
+      throw new Error('Prediction failed. Please try again.');
     }
-  }
-
-  /**
-   * Batch prediction for multiple images
-   */
-  async predictBatch(imageUris, plantType = 'coffee') {
-    const results = [];
-    for (const uri of imageUris) {
-      const result = await this.predictDisease(uri, plantType);
-      results.push(result);
-    }
-    return results;
-  }
-
-  /**
-   * Cleanup resources
-   */
-  dispose() {
-    if (this.models.coffee) {
-      this.models.coffee.dispose();
-    }
-    if (this.models.jute) {
-      this.models.jute.dispose();
-    }
-    this.isInitialized = false;
   }
 }
 
-// Singleton instance
 export default new MLService();
