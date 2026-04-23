@@ -336,62 +336,109 @@ export const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8
   },
-  // Add to existing styles
-plantTypeSelector: {
-  padding: 20,
-  backgroundColor: '#fff',
-  marginBottom: 16
-},
-selectorLabel: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#333',
-  marginBottom: 12
-},
-plantTypeButtons: {
-  flexDirection: 'row',
-  gap: 12
-},
-plantTypeButton: {
-  flex: 1,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 16,
-  borderRadius: 12,
-  borderWidth: 2,
-  borderColor: '#4CAF50',
-  backgroundColor: '#fff'
-},
-plantTypeButtonActive: {
-  backgroundColor: '#4CAF50',
-  borderColor: '#4CAF50'
-},
-plantTypeButtonText: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#4CAF50',
-  marginLeft: 8
-},
-plantTypeButtonTextActive: {
-  color: '#fff'
-},
-loadingContainer: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: 40
-},
-loadingText: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  color: '#333',
-  marginTop: 16
-},
-loadingSubtext: {
-  fontSize: 14,
-  color: '#666',
-  marginTop: 8,
-  textAlign: 'center'
-}
+  // Plant type selection
+  plantTypeSelector: {
+    padding: 20,
+    backgroundColor: '#fff',
+    marginBottom: 16
+  },
+  selectorLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12
+  },
+  plantTypeButtons: {
+    flexDirection: 'row',
+    gap: 12
+  },
+  plantTypeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    backgroundColor: '#fff'
+  },
+  plantTypeButtonActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50'
+  },
+  plantTypeButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginLeft: 8
+  },
+  plantTypeButtonTextActive: {
+    color: '#fff'
+  },
+
+  // Loading states
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 16
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center'
+  },
+
+  // Profile screen
+  profileCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    margin: 20,
+    marginTop: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4
+  },
+  profileAvatarContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  profileAvatarText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#4CAF50'
+  },
+  profileInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8
+  },
+  profileLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 8
+  },
+  profileValue: {
+    fontSize: 16,
+    color: '#333',
+    marginTop: 4,
+    marginBottom: 12
+  }
 });
