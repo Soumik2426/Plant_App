@@ -11,6 +11,7 @@ import DiagnoseScreen from '../screens/DiagnoseScreen';
 import ResultScreen from '../screens/ResultScreen';
 import CommunityScreen from '../screens/CommunityScreen';
 import StoreScreen from '../screens/StoreScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const DiagnoseStack = createStackNavigator();
@@ -42,6 +43,8 @@ export default function MainTabNavigator() {
             iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'Store') {
             iconName = focused ? 'cart' : 'cart-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
           }
 
           return <Icon name={iconName} size={size} color={color} />;
@@ -59,6 +62,7 @@ export default function MainTabNavigator() {
       <Tab.Screen name="Diagnose" component={DiagnoseStackNavigator} />
       <Tab.Screen name="Community" component={CommunityScreen} />
       <Tab.Screen name="Store" component={StoreScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
