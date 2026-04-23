@@ -1,7 +1,7 @@
 // ==========================================
 // FILE: screens/MyPlantsScreen.js
 // ==========================================
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,36 @@ import {
   TouchableOpacity
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useFocusEffect } from '@react-navigation/native';
 import PlantCard from '../components/PlantCard';
 import { styles } from '../styles/HomeStyles';
+import { loadPlants, removePlantById } from '../store/plantsStorage';
 
 export default function MyPlantsScreen({ navigation }) {
   const [plants, setPlants] = useState([]);
+  
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-  const removePlant = (id) => {
-    setPlants(plants.filter(plant => plant.id !== id));
+      const fetchPlants = async () => {
+        const savedPlants = await loadPlants();
+        if (isActive) {
+          setPlants(savedPlants);
+        }
+      };
+
+      fetchPlants();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+
+  const removePlant = async (id) => {
+    const updated = await removePlantById(id);
+    setPlants(updated);
   };
 
   return (

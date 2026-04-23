@@ -18,23 +18,30 @@ export default function HomeScreen({ navigation }) {
   const quickActions = [
     {
       icon: 'camera',
-      title: 'Diagnose Plant',
+      title: 'Detect Disease',
       description: 'AI-powered disease detection',
       color: '#2196F3',
       onPress: () => navigation.navigate('Diagnose')
     },
     {
       icon: 'leaf',
-      title: 'My Plants',
-      description: 'View your collection',
+      title: 'View Results',
+      description: 'See previous diagnoses',
       color: '#4CAF50',
       onPress: () => navigation.navigate('My Plants')
+    },
+    {
+      icon: 'person',
+      title: 'Profile',
+      description: 'View your profile',
+      color: '#9C27B0',
+      onPress: () => navigation.navigate('Profile')
     },
     {
       icon: 'people',
       title: 'Community',
       description: 'Connect with plant lovers',
-      color: '#9C27B0',
+      color: '#673AB7',
       onPress: () => navigation.navigate('Community')
     },
     {

@@ -1,3 +1,6 @@
+// ==========================================
+// FILE: screens/ResultScreen.js
+// ==========================================
 import React, { useState } from 'react';
 import {
   View,
@@ -9,38 +12,147 @@ import {
   Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { addPlant } from '../store/plantsStorage';
 import { styles } from '../styles/ResultStyles';
+
+// ✅ All known diseases from your dataset
+const diseaseDetails = {
+  'Healthy Coffee Leaf': {
+    status: 'healthy',
+    severity: 'none',
+    description: 'Your coffee plant appears healthy with no visible disease symptoms.',
+    recommendations: [
+      'Maintain regular watering and fertilizer schedule.',
+      'Inspect leaves weekly for early disease detection.',
+      'Ensure proper sunlight and airflow around plants.'
+    ]
+  },
+  'Healthy Sugarcane Leaf': {
+    status: 'healthy',
+    severity: 'none',
+    description: 'Your sugarcane crop is healthy with no signs of infection.',
+    recommendations: [
+      'Keep soil moisture balanced and avoid waterlogging.',
+      'Monitor for any early signs of fungal infection.',
+      'Ensure proper fertilization and drainage.'
+    ]
+  },
+  'Cercospora': {
+    status: 'diseased',
+    severity: 'moderate',
+    description: 'A fungal infection causing brown leaf spots with yellow halos.',
+    recommendations: [
+      'Remove and destroy infected leaves.',
+      'Apply copper-based fungicide every 14 days.',
+      'Avoid overhead watering and ensure spacing between plants.'
+    ]
+  },
+  'Rust Coffee Leaf': {
+    status: 'diseased',
+    severity: 'high',
+    description: 'A serious fungal disease producing orange or yellow powdery spots on coffee leaves.',
+    recommendations: [
+      'Apply systemic fungicide immediately.',
+      'Prune heavily infected leaves.',
+      'Avoid wet foliage and ensure good airflow.'
+    ]
+  },
+  'Rust Sugarcane Leaf': {
+    status: 'diseased',
+    severity: 'high',
+    description: 'Fungal disease causing reddish-brown pustules on the leaf surface.',
+    recommendations: [
+      'Remove and destroy infected leaves.',
+      'Apply sulfur-based fungicides.',
+      'Use resistant sugarcane varieties.'
+    ]
+  },
+  'Bacterial Blight': {
+    status: 'diseased',
+    severity: 'high',
+    description: 'Bacterial infection causing water-soaked lesions that turn brown or black.',
+    recommendations: [
+      'Avoid overhead irrigation and reduce humidity.',
+      'Apply copper-based bactericide sprays.',
+      'Remove affected plant parts immediately.'
+    ]
+  },
+  'RedRot': {
+    status: 'diseased',
+    severity: 'high',
+    description: 'A severe fungal disease that affects sugarcane stalks, causing red discoloration inside stems.',
+    recommendations: [
+      'Remove and destroy infected stalks.',
+      'Rotate crops and avoid replanting in infected fields.',
+      'Use disease-free seed cane for planting.'
+    ]
+  },
+  'Mosaic': {
+    status: 'diseased',
+    severity: 'moderate',
+    description: 'Viral disease causing irregular green and yellow patches on leaves.',
+    recommendations: [
+      'Remove and destroy infected plants.',
+      'Control insect vectors like aphids.',
+      'Use certified virus-free seeds.'
+    ]
+  },
+  'Yellow': {
+    status: 'diseased',
+    severity: 'low',
+    description: 'Chlorosis caused by nutrient deficiency or early viral infection.',
+    recommendations: [
+      'Check soil nitrogen and iron levels.',
+      'Apply balanced fertilizer with micronutrients.',
+      'Inspect for pests like whiteflies or aphids.'
+    ]
+  }
+};
 
 export default function ResultScreen({ route, navigation }) {
   const { result, imageUri } = route.params;
   const [plantName, setPlantName] = useState('');
   const [showSaveForm, setShowSaveForm] = useState(false);
+  const [showAllPredictions, setShowAllPredictions] = useState(false);
 
-  const handleSave = () => {
+  // Map the API result to local format
+  const disease = diseaseDetails[result.Class] || {
+    status: 'unknown',
+    severity: 'none',
+    description: 'Unknown disease class returned by model.',
+    recommendations: ['Try capturing the image again in better lighting.']
+  };
+
+  const confidence = result.Confidence || 0;
+  const confidencePercent = (confidence * 100).toFixed(1);
+
+  const handleSave = async () => {
     if (!plantName.trim()) {
       Alert.alert('Error', 'Please enter a plant name');
       return;
     }
 
-    // Save plant with diagnosis info
+    const now = Date.now();
     const plantData = {
+      id: now,
       name: plantName,
-      species: result.plantType,
-      status: result.status,
-      diagnosis: result.diagnosis,
-      confidence: result.confidence,
-      dateAdded: Date.now(),
-      lastDiagnosis: result,
+      diagnosis: result.Class,
+      confidence: confidence,
+      dateAdded: now,
+      status: disease.status === 'healthy' ? 'healthy' : 'diseased',
+      lastDiagnosis: disease,
       imageUri: imageUri
     };
 
-    // In real app: save to AsyncStorage or backend
-    Alert.alert('Success', `${plantName} saved to your collection!`, [
-      {
-        text: 'OK',
-        onPress: () => navigation.navigate('My Plants')
-      }
-    ]);
+    try {
+      await addPlant(plantData);
+      Alert.alert('Success', `${plantName} saved to your collection!`, [
+        { text: 'OK', onPress: () => navigation.navigate('My Plants') }
+      ]);
+    } catch (error) {
+      console.error('Error saving plant:', error);
+      Alert.alert('Error', 'Could not save plant. Please try again.');
+    }
   };
 
   const getSeverityColor = (severity) => {
@@ -70,56 +182,49 @@ export default function ResultScreen({ route, navigation }) {
       <View
         style={[
           styles.resultCard,
-          result.status === 'healthy'
+          disease.status === 'healthy'
             ? styles.healthyCard
             : styles.diseasedCard
         ]}
       >
-        {/* Captured Image */}
-        {imageUri && (
-          <Image source={{ uri: imageUri }} style={styles.resultImage} />
-        )}
+        {imageUri && <Image source={{ uri: imageUri }} style={styles.resultImage} />}
 
         {/* Status */}
         <View style={styles.statusContainer}>
           <Text style={styles.statusIcon}>
-            {result.status === 'healthy' ? '✅' : '⚠️'}
+            {disease.status === 'healthy' ? '✅' : '⚠️'}
           </Text>
-          <Text style={styles.diagnosisTitle}>{result.diagnosis}</Text>
-          
-          {/* Plant Type Badge */}
-          <View style={styles.plantTypeBadge}>
-            <Icon name="leaf" size={16} color="#4CAF50" />
-            <Text style={styles.plantTypeText}>
-              {result.plantType.charAt(0).toUpperCase() + result.plantType.slice(1)}
-            </Text>
-          </View>
+          <Text style={styles.diagnosisTitle}>{result.Class}</Text>
 
           {/* Confidence */}
           <View
             style={[
               styles.confidenceBadge,
-              result.status === 'healthy'
+              disease.status === 'healthy'
                 ? styles.healthyBadge
                 : styles.diseasedBadge
             ]}
           >
             <Text style={styles.confidenceText}>
-              Confidence: {(result.confidence * 100).toFixed(1)}%
+              Confidence: {confidencePercent}%
             </Text>
           </View>
 
           {/* Severity */}
-          {result.severity !== 'none' && (
-            <View style={[
-              styles.severityBadge,
-              { backgroundColor: getSeverityColor(result.severity) + '20' }
-            ]}>
-              <Text style={[
-                styles.severityText,
-                { color: getSeverityColor(result.severity) }
-              ]}>
-                Severity: {result.severity.charAt(0).toUpperCase() + result.severity.slice(1)}
+          {disease.severity !== 'none' && (
+            <View
+              style={[
+                styles.severityBadge,
+                { backgroundColor: getSeverityColor(disease.severity) + '20' }
+              ]}
+            >
+              <Text
+                style={[
+                  styles.severityText,
+                  { color: getSeverityColor(disease.severity) }
+                ]}
+              >
+                Severity: {disease.severity.charAt(0).toUpperCase() + disease.severity.slice(1)}
               </Text>
             </View>
           )}
@@ -128,58 +233,22 @@ export default function ResultScreen({ route, navigation }) {
         {/* Description */}
         <View style={styles.descriptionCard}>
           <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.descriptionText}>{result.description}</Text>
+          <Text style={styles.descriptionText}>{disease.description}</Text>
         </View>
-
-        {/* Treatment (if needed) */}
-        {result.treatment && (
-          <View style={styles.treatmentCard}>
-            <Icon name="medkit" size={20} color="#f44336" />
-            <Text style={styles.treatmentText}>{result.treatment}</Text>
-          </View>
-        )}
 
         {/* Recommendations */}
         <View style={styles.recommendationsCard}>
           <Text style={styles.sectionTitle}>Recommendations</Text>
-          {result.recommendations.map((rec, index) => (
+          {disease.recommendations.map((rec, index) => (
             <View key={index} style={styles.recommendationItem}>
               <Icon name="checkmark-circle" size={20} color="#4CAF50" />
               <Text style={styles.recommendationText}>{rec}</Text>
             </View>
           ))}
         </View>
-
-        {/* All Predictions (for debugging/transparency) */}
-        {result.allPredictions && (
-          <TouchableOpacity
-            style={styles.showDetailsButton}
-            onPress={() => setShowAllPredictions(!showAllPredictions)}
-          >
-            <Text style={styles.showDetailsText}>
-              Show All Predictions
-            </Text>
-            <Icon 
-              name={showAllPredictions ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color="#4CAF50" 
-            />
-          </TouchableOpacity>
-        )}
-
-        {showAllPredictions && (
-          <View style={styles.allPredictionsCard}>
-            {result.allPredictions.map((pred, index) => (
-              <View key={index} style={styles.predictionRow}>
-                <Text style={styles.predictionClass}>{pred.class}</Text>
-                <Text style={styles.predictionProb}>{pred.percentage}</Text>
-              </View>
-            ))}
-          </View>
-        )}
       </View>
 
-      {/* Action Buttons */}
+      {/* Save / Action Buttons */}
       {!showSaveForm ? (
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -225,10 +294,9 @@ export default function ResultScreen({ route, navigation }) {
       )}
 
       {/* Share Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.shareButton}
         onPress={() => {
-          // Implement share functionality
           Alert.alert('Share', 'Share diagnosis results with community');
         }}
       >
@@ -238,5 +306,3 @@ export default function ResultScreen({ route, navigation }) {
     </ScrollView>
   );
 }
-
-const showAllPredictions = false; // Add this state at the top of component
