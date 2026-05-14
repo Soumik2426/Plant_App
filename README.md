@@ -104,7 +104,3 @@ npm run android
 npm run ios
 npm test
 ```
-
-## License
-
-No license file is included yet.
