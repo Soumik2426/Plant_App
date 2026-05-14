@@ -72,7 +72,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import MainTabNavigator from './MainTabNavigator';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
 export const AuthContext = createContext();
@@ -84,6 +84,14 @@ export const useAuth = () => {
   }
   return context;
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default function AppNavigator() {
   const [user, setUser] = useState(null);
@@ -137,7 +145,7 @@ export default function AppNavigator() {
   if (loading) {
     // While restoring session
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
