@@ -40,7 +40,7 @@ export default function DiagnoseScreen({ navigation }) {
       console.error('Analysis error:', error);
       Alert.alert(
         'Analysis Failed',
-        'Failed to analyze the image. Please try again.',
+        error.message || 'Failed to analyze the image. Please try again.',
         [{ text: 'OK' }]
       );
     }
