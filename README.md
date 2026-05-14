@@ -1,167 +1,122 @@
-# PlantCare AI — Mobile App
-
-AI-assisted plant disease detection and plant-care companion built with React Native. Capture leaf images from camera or gallery, upload to a remote model API for inference, view diagnosis details and recommendations, and save results to a personal collection.
-
-## Key Features
-
-- On-device camera and gallery image capture (`components/PlantCamera.js`).
-- Remote model inference via a multipart API upload (`services/MLService.js`).
-- Diagnosis results with mapped disease details, severity, and recommendations (`screens/ResultScreen.js`).
-- Persistent user session (login/signup) stored with `AsyncStorage` (`navigation/AppNavigator.js`).
-- Save and manage diagnosed plants history (`store/plantsStorage.js`).
-- Additional app areas: Home, Community feed, Store catalog, Profile.
-
-## Project Structure (important files)
-
-- `App.tsx` — application entry and navigation container
-- `navigation/AppNavigator.js` — auth and main navigation
-- `navigation/MainTabNavigator.js` — tab layout and Diagnose stack
-- `screens/DiagnoseScreen.js` — capture → upload → analyze flow
-- `components/PlantCamera.js` — camera/gallery UI and logic
-- `services/MLService.js` — prediction API client and response mapping
-- `store/plantsStorage.js` — AsyncStorage helpers for saved plants
-- `styles/` — UI styles
-
-## Architecture & ML Integration Notes
-
-- The app sends images to a remote prediction endpoint. The default client URL is `http://localhost:8000/predict` (see `services/MLService.js`).
-- For Android development, the project expects ADB reverse or a reachable server (device → host) when running on a device/emulator. Adjust `MLService.apiUrl` if your backend runs elsewhere (e.g., public endpoint, ngrok URL, or AWS).
-- The ML response is normalized inside `MLService.predictDiseaseRemote()` to return an object `{ Class, Confidence, raw }`, where `Confidence` is a 0–1 numeric score.
-
-## Prerequisites
-
-- Node.js >= 20 (project `package.json` engines)
-- Yarn or npm
-- Android Studio / emulator for Android development
-- Xcode + CocoaPods for iOS development (macOS only)
-
-## Setup & Run (development)
-
-1. Install dependencies:
-
-```bash
-npm install
-yarn ios
 # PlantCare AI
 
-PlantCare AI is a React Native app that helps users detect common plant diseases by uploading leaf images to a prediction API. The app shows diagnosis details, confidence, and recommended actions, and lets users save results to a local history.
+This is a React Native app for plant disease diagnosis.
 
-Why this repo exists: it provides a mobile front-end for testing and evaluating a model-backed plant disease detector.
+The app lets a user:
+- take a photo (or pick one from gallery),
+- send it to a prediction API,
+- see the disease result with confidence and care suggestions,
+- save the diagnosis in a local history.
 
-## Highlights
+## Current scope
 
-- Capture or pick a plant image using the camera/gallery UI (`components/PlantCamera.js`).
-- Send images to a prediction service (`services/MLService.js`) and display results (`screens/ResultScreen.js`).
-- Save diagnosed plants locally and view history (`store/plantsStorage.js`).
-- Simple session handling (login/signup) using `AsyncStorage` (`navigation/AppNavigator.js`).
+This repository is the mobile app only.
+The ML model server is expected to run separately and expose a `/predict` endpoint.
 
-## Quick start
+## Main app flow
 
-1. Install dependencies:
+1. User logs in (local simulated auth).
+2. User opens Diagnose and captures/selects a leaf image.
+3. App uploads the image to the backend.
+4. App shows diagnosis, confidence, and recommendations.
+5. User can save the result to My Plants.
+
+## Tech stack
+
+- React Native
+- React Navigation
+- AsyncStorage
+- Axios
+- react-native-image-picker
+- react-native-vector-icons
+
+## Important files
+
+- `App.tsx` - app entry point
+- `navigation/AppNavigator.js` - auth gate + session restore
+- `navigation/MainTabNavigator.js` - tab and stack navigation
+- `screens/DiagnoseScreen.js` - capture and analysis trigger
+- `screens/ResultScreen.js` - diagnosis result UI
+- `components/PlantCamera.js` - camera/gallery capture component
+- `services/MLService.js` - API call and response mapping
+- `services/DeviceIdService.js` - persistent device id helper
+- `store/plantsStorage.js` - saved diagnoses storage
+
+## Setup
+
+Prerequisites:
+- Node.js 20+
+- npm or yarn
+- Android Studio (for Android)
+- Xcode + CocoaPods (for iOS on macOS)
+
+Install dependencies:
 
 ```bash
 npm install
-# or
-yarn install
 ```
 
-2. Start the Metro bundler:
+Start Metro:
 
 ```bash
 npm start
-# or
-yarn start
 ```
 
-3. Launch on Android:
+Run Android:
 
 ```bash
 npm run android
-# or
-yarn android
 ```
 
-4. Launch on iOS (macOS):
+Run iOS (macOS only):
 
 ```bash
 npm run ios
-# or
-yarn ios
 ```
 
-## Key files
+## Backend API expectations
 
-- `App.tsx` — app entry and navigation container
-- `navigation/AppNavigator.js` — auth + session logic
-- `navigation/MainTabNavigator.js` — tabs and Diagnose stack
-- `screens/DiagnoseScreen.js` — capture and analyze flow
-- `components/PlantCamera.js` — camera/gallery UI
-- `services/MLService.js` — API client and response parsing
-- `store/plantsStorage.js` — saved plants helpers
+Default API URL is set in `services/MLService.js`:
+- `http://localhost:8000/predict`
 
-## ML / Backend integration
+Request format:
+- Content-Type: `multipart/form-data`
+- Fields:
+  - `file` (image)
+  - `device_id` (string)
 
-- Default API URL: `http://localhost:8000/predict` (see `services/MLService.js`).
-- The client uploads the image under the form field named `file` and includes `device_id` (see `services/DeviceIdService.js`).
-- Accepted response patterns include fields like `prediction` / `Prediction` / `class` and `confidence` / `Confidence`. `MLService` normalizes the confidence into a 0–1 float.
+Accepted response patterns (any one is fine):
+- class field: `prediction` / `Prediction` / `class` / `Class`
+- confidence field: `confidence` / `Confidence`
 
-Example FastAPI endpoint the app expects:
+The app normalizes confidence into a number between 0 and 1.
 
-```python
-from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.responses import JSONResponse
+## Local backend on Android
 
-app = FastAPI()
-
-@app.post('/predict')
-async def predict(file: UploadFile = File(...), device_id: str = Form(None)):
-		contents = await file.read()
-		# decode contents and run the model here
-		return JSONResponse({'prediction': 'Rust Sugarcane Leaf', 'confidence': '85.28%'})
-```
-
-Tips:
-
-- For Android device testing against a local server, run:
+If your backend runs on your laptop at port 8000 and you test on Android device/emulator, run:
 
 ```bash
 adb reverse tcp:8000 tcp:8000
 ```
 
-- For a public test URL, expose the server with `ngrok` and set `services/MLService.js` `apiUrl` to the forwarded URL.
+Then keep API URL as `http://localhost:8000/predict`.
 
-## Notes for developers
+## Known limitations
 
-- Auth in `navigation/AppNavigator.js` is a simple local simulation for demo purposes; replace it with real auth when needed.
-- Saved plants are kept under key `plants_history_v1` in `AsyncStorage`.
-- `services/MLService.js` contains robust logging for easier debugging of API errors.
+- Auth is demo-only (no real auth provider yet).
+- Plant history is local to device (`AsyncStorage`).
+- API URL is currently hardcoded in `MLService`.
 
-## Commands
+## Useful commands
 
-- `npm start` — start Metro
-- `npm run android` — build + run Android
-- `npm run ios` — build + run iOS (macOS)
-- `npm test` — run tests
+```bash
+npm start
+npm run android
+npm run ios
+npm test
+```
 
 ## License
 
-Add a `LICENSE` file if you intend to open-source this project.
-
----
-
-If you want further polish I can add screenshots, a small backend README, or a short troubleshooting section for common setup issues.
-		```bash
-		adb reverse tcp:8000 tcp:8000
-		```
-
-		Then keep `MLService.apiUrl` as `http://localhost:8000/predict`.
-
-- Q: I want to use an externally reachable URL (ngrok / public). How to configure?
-	- A: Start `ngrok http 8000`, copy the HTTPS forwarding URL (e.g. `https://abcd1234.ngrok.io`) and update `services/MLService.js` `this.apiUrl` to `${NGROK_URL}/predict` or set a small config constant.
-
-- Q: What authentication does the API need?
-	- A: The current app does not attach auth headers for model calls. Add token / API key handling in `services/MLService.js` if your endpoint requires it. Example: add `Authorization: Bearer <TOKEN>` to axios headers.
-
-## Backend README snippet (optional file)
-
-If you want, I can create a `backend/README.md` that includes a small PyTorch inference example, Dockerfile, and a simple FastAPI server template. Should I add that file now?
+No license file is included yet.
+If you plan to open-source this project, add a `LICENSE` file.
