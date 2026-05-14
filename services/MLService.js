@@ -6,8 +6,9 @@ import { getDeviceId } from './DeviceIdService';
 
 class MLService {
   constructor() {
-    // New prediction endpoint that requires image + device ID
-    this.apiUrl = 'http://13.204.69.157:8000/predict';
+    // Prediction endpoint through ADB reverse port forwarding
+    // Phone connects to localhost:8000 which tunnels to PC:8000 via ADB
+    this.apiUrl = 'http://localhost:8000/predict';
   }
 
   /**
@@ -74,8 +75,14 @@ class MLService {
       return mappedResult;
 
     } catch (error) {
-      console.error('Error predicting disease:', error.response?.data || error.message);
-      throw new Error('Prediction failed. Please try again.');
+      console.error('=== ERROR PREDICTING DISEASE ===');
+      console.error('Error message:', error.message);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      console.error('Full error:', JSON.stringify(error, null, 2));
+      
+      const errorMsg = error.response?.data?.detail || error.response?.data?.message || error.message;
+      throw new Error(`Prediction failed: ${errorMsg}`);
     }
   }
 }
