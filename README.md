@@ -41,11 +41,31 @@ AI-assisted plant disease detection and plant-care companion built with React Na
 
 ```bash
 npm install
+yarn ios
+# PlantCare AI
+
+PlantCare AI is a React Native app that helps users detect common plant diseases by uploading leaf images to a prediction API. The app shows diagnosis details, confidence, and recommended actions, and lets users save results to a local history.
+
+Why this repo exists: it provides a mobile front-end for testing and evaluating a model-backed plant disease detector.
+
+## Highlights
+
+- Capture or pick a plant image using the camera/gallery UI (`components/PlantCamera.js`).
+- Send images to a prediction service (`services/MLService.js`) and display results (`screens/ResultScreen.js`).
+- Save diagnosed plants locally and view history (`store/plantsStorage.js`).
+- Simple session handling (login/signup) using `AsyncStorage` (`navigation/AppNavigator.js`).
+
+## Quick start
+
+1. Install dependencies:
+
+```bash
+npm install
 # or
 yarn install
 ```
 
-2. Start Metro bundler:
+2. Start the Metro bundler:
 
 ```bash
 npm start
@@ -53,7 +73,7 @@ npm start
 yarn start
 ```
 
-3. Run on Android emulator/device:
+3. Launch on Android:
 
 ```bash
 npm run android
@@ -61,7 +81,7 @@ npm run android
 yarn android
 ```
 
-4. Run on iOS (macOS):
+4. Launch on iOS (macOS):
 
 ```bash
 npm run ios
@@ -69,48 +89,23 @@ npm run ios
 yarn ios
 ```
 
-Backend (ML API)
+## Key files
 
-- The app uploads images as multipart/form-data to the configured `apiUrl` (see `services/MLService.js`). If you run the model server locally and test on an Android device/emulator, use `adb reverse tcp:8000 tcp:8000` to make `http://localhost:8000` reachable from the device.
-- Expected response shape (examples handled by `MLService`):
-	- `{ prediction: 'Rust Sugarcane Leaf', confidence: '85.28%', image_url: '...' }`
-	- The service will extract class and confidence and normalize confidence to a 0–1 float.
+- `App.tsx` — app entry and navigation container
+- `navigation/AppNavigator.js` — auth + session logic
+- `navigation/MainTabNavigator.js` — tabs and Diagnose stack
+- `screens/DiagnoseScreen.js` — capture and analyze flow
+- `components/PlantCamera.js` — camera/gallery UI
+- `services/MLService.js` — API client and response parsing
+- `store/plantsStorage.js` — saved plants helpers
 
-## Development Notes
+## ML / Backend integration
 
-- Simulated auth is implemented in `navigation/AppNavigator.js` and persisted to `AsyncStorage` for demo purposes — replace with a real auth API as needed.
-- Saved plants are stored locally via `store/plantsStorage.js` using key `plants_history_v1`.
-- Error handling in `services/MLService.js` prints diagnostic logs and throws readable errors surfaced to the UI.
+- Default API URL: `http://localhost:8000/predict` (see `services/MLService.js`).
+- The client uploads the image under the form field named `file` and includes `device_id` (see `services/DeviceIdService.js`).
+- Accepted response patterns include fields like `prediction` / `Prediction` / `class` and `confidence` / `Confidence`. `MLService` normalizes the confidence into a 0–1 float.
 
-## Contributing
-
-- Fork the repo, create a branch, and open a PR. Keep changes focused and include tests where applicable.
-
-## Useful Commands
-
-- `npm start` — start Metro
-- `npm run android` — build + run Android
-- `npm run ios` — build + run iOS (macOS)
-- `npm test` — run Jest tests
-
-## License
-
-This repository does not include a license file. Add one if you plan to open-source the project.
-
----
-
-If you'd like, I can also:
-
-1. Add a FAQ section describing how to point the app to a remote ML endpoint (ngrok / public URL).
-2. Add a small `backend/` README snippet describing the expected FastAPI/PyTorch payload and response format.
-
-README updated to reflect the app's real structure and ML integration.
-
-## Backend / ML Integration (example)
-
-This app expects a prediction service that accepts a multipart/form-data POST with an image and optional device identifier. Here's a minimal FastAPI example showing the expected contract and a small hint on how to run a model inference handler.
-
-Example endpoint (FastAPI):
+Example FastAPI endpoint the app expects:
 
 ```python
 from fastapi import FastAPI, File, UploadFile, Form
@@ -120,33 +115,41 @@ app = FastAPI()
 
 @app.post('/predict')
 async def predict(file: UploadFile = File(...), device_id: str = Form(None)):
-		# read bytes
 		contents = await file.read()
-		# TODO: decode image bytes and run model inference (e.g., PIL.Image.open + torchvision transform)
-		# Example response format that the app handles:
-		result = {
-				'prediction': 'Rust Sugarcane Leaf',
-				'confidence': '85.28%',
-				'image_url': None
-		}
-		return JSONResponse(content=result)
+		# decode contents and run the model here
+		return JSONResponse({'prediction': 'Rust Sugarcane Leaf', 'confidence': '85.28%'})
 ```
 
-Notes:
-- Field names: the app uploads the image under `file` and includes `device_id` as a form field.
-- Response shapes handled by `services/MLService.js`: `prediction` / `Prediction` / `class` / `Class` and `confidence` / `Confidence` (string like `85.28%` or numeric). The client normalizes confidence to a 0–1 float.
-- If your model returns numeric confidence in 0–1 range, the client already handles that. If returning 0–100, it converts accordingly.
+Tips:
 
-Performance & deployment hints:
-- For local development use `adb reverse tcp:8000 tcp:8000` (Android) so `http://localhost:8000` on the device maps to your host.
-- For quick remote testing, expose the backend with `ngrok http 8000` and set `services/MLService.js` `apiUrl` to the ngrok URL.
-- For production, host the model with a scalable API (AWS/GCP/Azure) and use HTTPS.
+- For Android device testing against a local server, run:
 
-## FAQ — Pointing the app to your ML endpoint
+```bash
+adb reverse tcp:8000 tcp:8000
+```
 
-- Q: I run the server locally on port 8000 — the app on my device can't reach it. What do I do?
-	- A: If testing on an Android device/emulator, run:
+- For a public test URL, expose the server with `ngrok` and set `services/MLService.js` `apiUrl` to the forwarded URL.
 
+## Notes for developers
+
+- Auth in `navigation/AppNavigator.js` is a simple local simulation for demo purposes; replace it with real auth when needed.
+- Saved plants are kept under key `plants_history_v1` in `AsyncStorage`.
+- `services/MLService.js` contains robust logging for easier debugging of API errors.
+
+## Commands
+
+- `npm start` — start Metro
+- `npm run android` — build + run Android
+- `npm run ios` — build + run iOS (macOS)
+- `npm test` — run tests
+
+## License
+
+Add a `LICENSE` file if you intend to open-source this project.
+
+---
+
+If you want further polish I can add screenshots, a small backend README, or a short troubleshooting section for common setup issues.
 		```bash
 		adb reverse tcp:8000 tcp:8000
 		```
