@@ -1,97 +1,164 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# PlantCare AI — Mobile App
 
-# Getting Started
+AI-assisted plant disease detection and plant-care companion built with React Native. Capture leaf images from camera or gallery, upload to a remote model API for inference, view diagnosis details and recommendations, and save results to a personal collection.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Key Features
 
-## Step 1: Start Metro
+- On-device camera and gallery image capture (`components/PlantCamera.js`).
+- Remote model inference via a multipart API upload (`services/MLService.js`).
+- Diagnosis results with mapped disease details, severity, and recommendations (`screens/ResultScreen.js`).
+- Persistent user session (login/signup) stored with `AsyncStorage` (`navigation/AppNavigator.js`).
+- Save and manage diagnosed plants history (`store/plantsStorage.js`).
+- Additional app areas: Home, Community feed, Store catalog, Profile.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Project Structure (important files)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- `App.tsx` — application entry and navigation container
+- `navigation/AppNavigator.js` — auth and main navigation
+- `navigation/MainTabNavigator.js` — tab layout and Diagnose stack
+- `screens/DiagnoseScreen.js` — capture → upload → analyze flow
+- `components/PlantCamera.js` — camera/gallery UI and logic
+- `services/MLService.js` — prediction API client and response mapping
+- `store/plantsStorage.js` — AsyncStorage helpers for saved plants
+- `styles/` — UI styles
 
-```sh
-# Using npm
+## Architecture & ML Integration Notes
+
+- The app sends images to a remote prediction endpoint. The default client URL is `http://localhost:8000/predict` (see `services/MLService.js`).
+- For Android development, the project expects ADB reverse or a reachable server (device → host) when running on a device/emulator. Adjust `MLService.apiUrl` if your backend runs elsewhere (e.g., public endpoint, ngrok URL, or AWS).
+- The ML response is normalized inside `MLService.predictDiseaseRemote()` to return an object `{ Class, Confidence, raw }`, where `Confidence` is a 0–1 numeric score.
+
+## Prerequisites
+
+- Node.js >= 20 (project `package.json` engines)
+- Yarn or npm
+- Android Studio / emulator for Android development
+- Xcode + CocoaPods for iOS development (macOS only)
+
+## Setup & Run (development)
+
+1. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+```
+
+2. Start Metro bundler:
+
+```bash
 npm start
-
-# OR using Yarn
+# or
 yarn start
 ```
 
-## Step 2: Build and run your app
+3. Run on Android emulator/device:
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+```bash
 npm run android
-
-# OR using Yarn
+# or
 yarn android
 ```
 
-### iOS
+4. Run on iOS (macOS):
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+```bash
 npm run ios
-
-# OR using Yarn
+# or
 yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Backend (ML API)
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+- The app uploads images as multipart/form-data to the configured `apiUrl` (see `services/MLService.js`). If you run the model server locally and test on an Android device/emulator, use `adb reverse tcp:8000 tcp:8000` to make `http://localhost:8000` reachable from the device.
+- Expected response shape (examples handled by `MLService`):
+	- `{ prediction: 'Rust Sugarcane Leaf', confidence: '85.28%', image_url: '...' }`
+	- The service will extract class and confidence and normalize confidence to a 0–1 float.
 
-## Step 3: Modify your app
+## Development Notes
 
-Now that you have successfully run the app, let's make changes!
+- Simulated auth is implemented in `navigation/AppNavigator.js` and persisted to `AsyncStorage` for demo purposes — replace with a real auth API as needed.
+- Saved plants are stored locally via `store/plantsStorage.js` using key `plants_history_v1`.
+- Error handling in `services/MLService.js` prints diagnostic logs and throws readable errors surfaced to the UI.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Contributing
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+- Fork the repo, create a branch, and open a PR. Keep changes focused and include tests where applicable.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## Useful Commands
 
-## Congratulations! :tada:
+- `npm start` — start Metro
+- `npm run android` — build + run Android
+- `npm run ios` — build + run iOS (macOS)
+- `npm test` — run Jest tests
 
-You've successfully run and modified your React Native App. :partying_face:
+## License
 
-### Now what?
+This repository does not include a license file. Add one if you plan to open-source the project.
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+---
 
-# Troubleshooting
+If you'd like, I can also:
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+1. Add a FAQ section describing how to point the app to a remote ML endpoint (ngrok / public URL).
+2. Add a small `backend/` README snippet describing the expected FastAPI/PyTorch payload and response format.
 
-# Learn More
+README updated to reflect the app's real structure and ML integration.
 
-To learn more about React Native, take a look at the following resources:
+## Backend / ML Integration (example)
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+This app expects a prediction service that accepts a multipart/form-data POST with an image and optional device identifier. Here's a minimal FastAPI example showing the expected contract and a small hint on how to run a model inference handler.
+
+Example endpoint (FastAPI):
+
+```python
+from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+@app.post('/predict')
+async def predict(file: UploadFile = File(...), device_id: str = Form(None)):
+		# read bytes
+		contents = await file.read()
+		# TODO: decode image bytes and run model inference (e.g., PIL.Image.open + torchvision transform)
+		# Example response format that the app handles:
+		result = {
+				'prediction': 'Rust Sugarcane Leaf',
+				'confidence': '85.28%',
+				'image_url': None
+		}
+		return JSONResponse(content=result)
+```
+
+Notes:
+- Field names: the app uploads the image under `file` and includes `device_id` as a form field.
+- Response shapes handled by `services/MLService.js`: `prediction` / `Prediction` / `class` / `Class` and `confidence` / `Confidence` (string like `85.28%` or numeric). The client normalizes confidence to a 0–1 float.
+- If your model returns numeric confidence in 0–1 range, the client already handles that. If returning 0–100, it converts accordingly.
+
+Performance & deployment hints:
+- For local development use `adb reverse tcp:8000 tcp:8000` (Android) so `http://localhost:8000` on the device maps to your host.
+- For quick remote testing, expose the backend with `ngrok http 8000` and set `services/MLService.js` `apiUrl` to the ngrok URL.
+- For production, host the model with a scalable API (AWS/GCP/Azure) and use HTTPS.
+
+## FAQ — Pointing the app to your ML endpoint
+
+- Q: I run the server locally on port 8000 — the app on my device can't reach it. What do I do?
+	- A: If testing on an Android device/emulator, run:
+
+		```bash
+		adb reverse tcp:8000 tcp:8000
+		```
+
+		Then keep `MLService.apiUrl` as `http://localhost:8000/predict`.
+
+- Q: I want to use an externally reachable URL (ngrok / public). How to configure?
+	- A: Start `ngrok http 8000`, copy the HTTPS forwarding URL (e.g. `https://abcd1234.ngrok.io`) and update `services/MLService.js` `this.apiUrl` to `${NGROK_URL}/predict` or set a small config constant.
+
+- Q: What authentication does the API need?
+	- A: The current app does not attach auth headers for model calls. Add token / API key handling in `services/MLService.js` if your endpoint requires it. Example: add `Authorization: Bearer <TOKEN>` to axios headers.
+
+## Backend README snippet (optional file)
+
+If you want, I can create a `backend/README.md` that includes a small PyTorch inference example, Dockerfile, and a simple FastAPI server template. Should I add that file now?
