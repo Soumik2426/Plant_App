@@ -1,56 +1,48 @@
 # PlantCare AI
 
-This is a React Native app for plant disease diagnosis.
+PlantCare AI is a React Native mobile app for basic plant disease diagnosis.
 
-The app lets a user:
-- take a photo (or pick one from gallery),
-- send it to a prediction API,
-- see the disease result with confidence and care suggestions,
-- save the diagnosis in a local history.
+You can capture a leaf image (or choose one from gallery), send it to a prediction API, review the result with confidence + recommendations, and save that diagnosis in local history.
 
-## Current scope
+## What is in this repo
 
-This repository is the mobile app only.
-The ML model server is expected to run separately and expose a `/predict` endpoint.
+This repository contains the mobile app.
 
-## Main app flow
+The model backend is not included here. The app expects an external API endpoint at:
 
-1. User logs in (local simulated auth).
-2. User opens Diagnose and captures/selects a leaf image.
-3. App uploads the image to the backend.
-4. App shows diagnosis, confidence, and recommendations.
-5. User can save the result to My Plants.
+`http://localhost:8000/predict`
 
-## Tech stack
+## Current features
 
-- React Native
-- React Navigation
-- AsyncStorage
-- Axios
-- react-native-image-picker
-- react-native-vector-icons
+- Login and signup screens with local session persistence using AsyncStorage
+- Main tab layout with Home, My Plants, Diagnose, Community, Store, and Profile
+- Diagnose flow with camera/gallery image input
+- Remote prediction call with multipart upload (`file` + `device_id`)
+- Result screen with mapped disease details and confidence display
+- Save/remove diagnosed plants in local storage
 
-## Important files
+## Main files
 
-- `App.tsx` - app entry point
-- `navigation/AppNavigator.js` - auth gate + session restore
-- `navigation/MainTabNavigator.js` - tab and stack navigation
-- `screens/DiagnoseScreen.js` - capture and analysis trigger
-- `screens/ResultScreen.js` - diagnosis result UI
-- `components/PlantCamera.js` - camera/gallery capture component
-- `services/MLService.js` - API call and response mapping
+- `App.tsx` - app root + navigation container
+- `navigation/AppNavigator.js` - auth flow and session restore
+- `navigation/MainTabNavigator.js` - tab navigation and Diagnose stack
+- `screens/DiagnoseScreen.js` - capture and analyze flow
+- `screens/ResultScreen.js` - diagnosis output UI
+- `components/PlantCamera.js` - camera and gallery picker
+- `services/MLService.js` - backend request and response normalization
 - `services/DeviceIdService.js` - persistent device id helper
-- `store/plantsStorage.js` - saved diagnoses storage
+- `store/plantsStorage.js` - diagnosis history storage
 
-## Setup
+## Run locally
 
-Prerequisites:
+Requirements:
+
 - Node.js 20+
 - npm or yarn
-- Android Studio (for Android)
-- Xcode + CocoaPods (for iOS on macOS)
+- Android Studio (Android)
+- Xcode + CocoaPods (iOS on macOS)
 
-Install dependencies:
+Install:
 
 ```bash
 npm install
@@ -74,40 +66,37 @@ Run iOS (macOS only):
 npm run ios
 ```
 
-## Backend API expectations
+## Backend request/response format used by the app
 
-Default API URL is set in `services/MLService.js`:
-- `http://localhost:8000/predict`
+Request:
 
-Request format:
+- Method: `POST`
+- URL: `/predict`
 - Content-Type: `multipart/form-data`
-- Fields:
-  - `file` (image)
-  - `device_id` (string)
+- Fields: `file`, `device_id`
 
-Accepted response patterns (any one is fine):
-- class field: `prediction` / `Prediction` / `class` / `Class`
-- confidence field: `confidence` / `Confidence`
+Response fields supported by the client:
 
-The app normalizes confidence into a number between 0 and 1.
+- Class: `prediction` or `Prediction` or `class` or `Class`
+- Confidence: `confidence` or `Confidence`
 
-## Local backend on Android
+The client converts confidence to a numeric 0-1 range for internal use.
 
-If your backend runs on your laptop at port 8000 and you test on Android device/emulator, run:
+## Android local API tip
+
+If backend is running on your machine at port 8000, use:
 
 ```bash
 adb reverse tcp:8000 tcp:8000
 ```
 
-Then keep API URL as `http://localhost:8000/predict`.
+## Notes
 
-## Known limitations
+- Auth is currently local/demo logic (not server-based auth).
+- Diagnosed plants are stored locally in AsyncStorage.
+- API URL is hardcoded in `services/MLService.js`.
 
-- Auth is demo-only (no real auth provider yet).
-- Plant history is local to device (`AsyncStorage`).
-- API URL is currently hardcoded in `MLService`.
-
-## Useful commands
+## Commands
 
 ```bash
 npm start
@@ -119,4 +108,3 @@ npm test
 ## License
 
 No license file is included yet.
-If you plan to open-source this project, add a `LICENSE` file.
