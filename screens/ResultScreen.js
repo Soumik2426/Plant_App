@@ -113,7 +113,6 @@ export default function ResultScreen({ route, navigation }) {
   const { result, imageUri } = route.params;
   const [plantName, setPlantName] = useState('');
   const [showSaveForm, setShowSaveForm] = useState(false);
-  const [showAllPredictions, setShowAllPredictions] = useState(false);
 
   // Map the API result to local format
   const disease = diseaseDetails[result.Class] || {
